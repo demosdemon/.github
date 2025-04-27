@@ -1,0 +1,73 @@
+name: "Rust: Run Clippy and Tests"
+description: Run Clippy and Tests
+inputs:
+  toolchain:
+    description: >-
+      Comma-separated list of Rust toolchain specifications. Last version becomes the
+      default. -- see https://rust-lang.github.io/rustup/concepts/toolchains.html#toolchain-specification
+    required: false
+    default: "nightly"
+  cache-shared-key:
+    description: >-
+      A cache key that is shared across multiple actions. This is used to cache
+      dependencies and build outputs.
+    required: false
+  steps-for-no-default-features:
+    description: Include additional steps to run clippy and tests with `--no-default-features`.
+    required: false
+    default: "true"
+  steps-for-all-features:
+    description: Include additional steps to run clippy and tests with `--all-features`.
+    required: false
+    default: "true"
+  # feature-sets:
+  #   description: >-
+  #     If features are mutually exclusive or behave differently when only subsets of
+  #     features are enabled, you can specify sets of features to be enabled together.
+  #     Delimit multiple sets with semicolons and features within a set with commas. For
+  #     example: `default,feat1,default,feat2;feat2,feat3;feat4;;default`.
+  #   required: false
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install Rust (${{ inputs.toolchain }})
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: ${{ inputs.toolchain }}
+        components: clippy
+        cache-shared-key: ${{ inputs.cache-shared-key }}
+
+    - name: Fetch cargo dependencies
+      shell: bash
+      run: cargo fetch --verbose --locked
+
+    - name: Run Clippy (no default features)
+      shell: bash
+      if: ${{ inputs.steps-for-no-default-features == 'true' }}
+      run: cargo clippy --verbose --workspace --all-targets --no-default-features --frozen
+
+    - name: Run Clippy (default features)
+      shell: bash
+      run: cargo clippy --verbose --workspace --all-targets --frozen
+
+    - name: Run Clippy (all features)
+      shell: bash
+      if: ${{ inputs.steps-for-all-features == 'true' }}
+      run: cargo clippy --verbose --workspace --all-targets --all-features --frozen
+
+    - name: Run Tests (no default features)
+      shell: bash
+      if: ${{ inputs.steps-for-no-default-features == 'true' }}
+      run: cargo test --verbose --workspace --no-default-features --frozen
+
+    - name: Run Tests (default features)
+      shell: bash
+      run: cargo test --verbose --workspace --frozen
+
+    - name: Run Tests (all features)
+      shell: bash
+      if: ${{ inputs.steps-for-all-features == 'true' }}
+      run: cargo test --verbose --workspace --all-features --frozen

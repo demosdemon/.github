@@ -28,7 +28,3 @@ runs:
     - name: Run Rustfmt
       shell: bash
       run: cargo fmt --all --check
-
-    - name: Fetch cargo dependencies
-      shell: bash
-      run: cargo fetch --verbose --locked
